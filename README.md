@@ -24,27 +24,20 @@
    **注意**: `discord` パッケージではなく、Pycord (`py-cord`) を使用します。誤って
    `discord.py` や `discord` をインストールしていると、`discord.Bot` が
    見つからないエラーが発生します。
-4. プロジェクトルートに `.env` ファイルを作成し、次の内容を設定します。
+4. プロジェクトルートに `.env` ファイルを作成します。
+   起動時に `.env` が存在しない場合、設定例を記載した `.env.example` が自動生成されます。
+   以下の内容を参考に `.env` を作成してください。
    ```
    DISCORD_TOKEN="YOUR_DISCORD_BOT_TOKEN"
    GEMINI_API_KEY="YOUR_GEMINI_API_KEY"
    TRANSCRIPTION_MODEL="small"     # 任意
    GEMINI_MODEL="gemini-2.5-flash" # 任意
    ```
-5. 録音データ用ディレクトリを作成します。
-   ```bash
-   mkdir -p data/queue data/recordings
-   ```
-   Windows の場合は次のコマンドを実行します。
-   ```powershell
-   mkdir data\queue
-   mkdir data\recordings
-   ```
-6. Bot を起動します。
+5. Bot を起動します。データディレクトリ(`data/queue`, `data/recordings`) は起動時に自動で作成されます。
    ```bash
    python main.py
    ```
-7. Discord 上で `/setup channels` コマンドを実行し、録音対象のカテゴリと結果送信先のテキストチャンネルを選択します。
+6. Discord 上で `/setup channels` コマンドを実行し、録音対象のカテゴリと結果送信先のテキストチャンネルを選択します。
 
 ## 仕組みの概要
 
