@@ -13,9 +13,11 @@ intents.voice_states = True
 
 bot = discord.Bot(intents=intents)
 
+
 @bot.event
 async def on_ready():
     print(f"{bot.user}としてログインしました。")
+
 
 async def setup_bot():
     queue_path = os.path.join(".", "data", "queue")
