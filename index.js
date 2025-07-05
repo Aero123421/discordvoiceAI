@@ -1,4 +1,4 @@
-const { Client, GatewayIntentBits } = require('discord.js');
+const { Client, GatewayIntentBits, REST, Routes, SlashCommandBuilder } = require('discord.js');
 const { joinVoiceChannel, EndBehaviorType } = require('@discordjs/voice');
 const prism = require('prism-media');
 const fs = require('fs');
@@ -16,9 +16,53 @@ client.once('ready', () => {
   console.log(`${client.user.tag} としてログインしました。`);
 });
 
+// Define a simple ping command
+const commands = [
+  new SlashCommandBuilder().setName('ping').setDescription('Replies with Pong!'),
+].map(command => command.toJSON());
+
+// Register slash commands
+client.once('ready', async () => {
+  console.log(`${client.user.tag} としてログインしました。`);
+  try {
+    console.log('Started refreshing application (/) commands.');
+    const rest = new REST({ version: '10' }).setToken(process.env.DISCORD_TOKEN);
+    // For guild-specific commands (faster updates for testing)
+    // await rest.put(
+    //   Routes.applicationGuildCommands(client.user.id, process.env.GUILD_ID), // GUILD_ID will need to be in .env
+    //   { body: commands },
+    // );
+    // For global commands (can take up to an hour to propagate)
+    await rest.put(
+      Routes.applicationCommands(client.user.id),
+      { body: commands },
+    );
+    console.log('Successfully reloaded application (/) commands.');
+  } catch (error) {
+    console.error(error);
+  }
+});
+
+client.on('interactionCreate', async interaction => {
+  if (!interaction.isChatInputCommand()) return;
+
+  const { commandName } = interaction;
+
+  if (commandName === 'ping') {
+    await interaction.reply('Pong!');
+  }
+});
+
 client.on('voiceStateUpdate', async (oldState, newState) => {
   const member = newState.member || oldState.member;
   if (!member || member.user.bot) return;
+
+  // Ensure the recordings directory exists
+  const recordingsDir = path.join(__dirname, 'data', 'recordings');
+  if (!fs.existsSync(recordingsDir)) {
+    fs.mkdirSync(recordingsDir, { recursive: true });
+    console.log(`Created directory: ${recordingsDir}`);
+  }
 
   if (!oldState.channel && newState.channel) {
     const connection = joinVoiceChannel({
