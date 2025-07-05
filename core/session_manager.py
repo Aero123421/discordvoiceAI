@@ -23,7 +23,7 @@ class RecordingSession:
     def create_task(self):
         @tasks.loop(minutes=5.0)
         async def chunker():
-            if self.vc.is_recording():
+            if self.vc.recording:
                 self.vc.stop_recording()
 
         @chunker.before_loop
@@ -40,7 +40,7 @@ class RecordingSession:
 
     def stop(self):
         self.chunk_task.cancel()
-        if self.vc.is_recording():
+        if self.vc.recording:
             self.vc.stop_recording()
 
 
