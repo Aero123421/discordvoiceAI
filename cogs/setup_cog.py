@@ -81,7 +81,3 @@ class SetupCog(commands.Cog):
 
         view = SetupView(ctx)
         await ctx.respond("設定を選択してください", view=view, ephemeral=True)
-
-
-def setup(bot):
-    bot.add_cog(SetupCog(bot))
