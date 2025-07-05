@@ -7,9 +7,8 @@ from core.session_manager import RecordingSessionManager
 class RecordingCog(commands.Cog):
     def __init__(self, bot: discord.Bot):
         self.bot = bot
-        self.session_manager = RecordingSessionManager(
-            bot, bot.transcription_queue
-        )
+        # Botインスタンスが持つセッションマネージャーを参照する
+        self.session_manager = bot.session_manager
 
     @commands.Cog.listener()
     async def on_voice_state_update(

@@ -1,6 +1,7 @@
 import os
 import json
 import time
+import asyncio
 import discord
 from discord.ext import tasks
 
@@ -18,6 +19,7 @@ class RecordingSession:
         self.vc = voice_client
         self.manager = manager
         self.transcript_segments: list[str] = []
+        self.audio_chunk_paths: list[str] = []
         self.chunk_task = self.create_task()
 
     def create_task(self):
@@ -65,40 +67,50 @@ class RecordingSessionManager:
 
     async def stop_recording(self, member: discord.Member):
         session = self.active_sessions.get(member.id)
-        if session:
-            session.stop()
-            if session.vc.is_connected():
-                await session.vc.disconnect()
+        if not session:
+            return
 
-            # 最後の音声チャンクの文字起こしが完了するまで待機
-            await self.queue.join()
+        session.stop()
+        if session.vc.is_connected():
+            await session.vc.disconnect()
 
-            final_text = "".join(session.transcript_segments)
-            if not final_text:
-                print("文字起こしテキストが取得できませんでした。")
-                return
+        # ★修正点1: 最後のコールバックが実行されるのを少し待つ
+        print(f"{member.name}の最終処理待機中...")
+        await asyncio.sleep(2)
 
-            result = await self.gemini.process_transcript(final_text)
-            content = result.get("full_transcript", final_text)
+        # 最後の音声チャンクの文字起こしが完了するまで待機
+        await self.queue.join()
+        print(f"{member.name}のキュー処理が完了しました。")
 
-            os.makedirs("data/transcripts", exist_ok=True)
-            txt_path = f"data/transcripts/{member.name}_transcript_{int(time.time())}.txt"
-            with open(txt_path, "w", encoding="utf-8") as f:
-                f.write(content)
-
-            channel_id = self.get_output_channel(member.guild)
-            if channel_id:
-                channel = member.guild.get_channel(channel_id)
-                if channel:
-                    await channel.send(
-                        f"{member.mention} さんの文字起こし結果です。",
-                        file=discord.File(txt_path),
-                    )
-
-            os.remove(txt_path)
-
-            # transcription完了後にセッションを削除
+        final_text = "".join(session.transcript_segments)
+        if not final_text.strip():
+            print("文字起こしテキストが取得できませんでした。セッションをクリーンアップします。")
+            self.cleanup_session_files(session)
             self.active_sessions.pop(member.id, None)
+            return
+
+        result = await self.gemini.process_transcript(final_text)
+        content = result.get("full_transcript", final_text)
+
+        os.makedirs("data/transcripts", exist_ok=True)
+        txt_path = f"data/transcripts/{member.name}_transcript_{int(time.time())}.txt"
+        with open(txt_path, "w", encoding="utf-8") as f:
+            f.write(content)
+
+        channel_id = self.get_output_channel(member.guild)
+        if channel_id:
+            channel = member.guild.get_channel(channel_id)
+            if channel:
+                await channel.send(
+                    f"{member.mention} さんの文字起こし結果です。",
+                    file=discord.File(txt_path),
+                )
+
+        # ★修正点2: 一時ファイルを削除する
+        self.cleanup_session_files(session, txt_path)
+
+        # 最後にセッションを削除
+        self.active_sessions.pop(member.id, None)
 
     def get_session(self, user_id: int):
         return self.active_sessions.get(user_id)
@@ -126,9 +138,22 @@ class RecordingSessionManager:
             f.write(user_audio.file.getbuffer())
         await self.queue.put((member.id, file_path))
         session = self.get_session(member.id)
+        if session:
+            session.audio_chunk_paths.append(file_path)
         if session and session.vc.is_connected():
             session.vc.start_recording(
                 discord.sinks.WaveSink(),
                 self.once_done_callback,
                 member,
             )
+
+    def cleanup_session_files(self, session: RecordingSession, final_txt_path: str = None):
+        print("一時ファイルのクリーンアップを開始します...")
+        if final_txt_path and os.path.exists(final_txt_path):
+            os.remove(final_txt_path)
+            print(f"削除しました: {final_txt_path}")
+
+        for path in getattr(session, "audio_chunk_paths", []):
+            if os.path.exists(path):
+                os.remove(path)
+                print(f"削除しました: {path}")
