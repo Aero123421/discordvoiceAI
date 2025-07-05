@@ -68,10 +68,10 @@ bot = MyBot(intents=intents)
 async def on_ready():
     print(f"{bot.user}としてログインしました。")
     try:
-        await bot.tree.sync()
-        print("コマンドツリーを同期しました。")
+        await bot.sync_commands()
+        print("スラッシュコマンドを同期しました。")
     except Exception as e:
-        print(f"コマンドツリーの同期中にエラーが発生しました: {e}")
+        print(f"コマンド同期中にエラーが発生しました: {e}")
 
 
 if __name__ == "__main__":
