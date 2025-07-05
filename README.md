@@ -51,3 +51,13 @@
 ## ライセンス
 
 MIT
+
+## Node.js 版 (discord.js v14)
+
+Node.js 18 以上がインストールされていれば、`discord.js` を利用した Bot も起動できます。
+
+1. ルートディレクトリで `npm install` を実行し依存パッケージを取得します。
+2. `.env` に `DISCORD_TOKEN` を設定します。
+3. `node index.js` を実行すると Bot が起動します。
+
+録音ファイルは `data/recordings` に保存され、`transcriber.py` 経由で文字起こしされます。

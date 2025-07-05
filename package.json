@@ -1,0 +1,19 @@
+{
+  "name": "discordvoiceai",
+  "version": "1.0.0",
+  "description": "このプロジェクトは、指定したボイスチャンネルでの会話を録音し、`faster-whisper`で文字起こしした後、Gemini API を用いて整形する Discord Bot の簡易実装です。",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "discord.js": "^14.11.0",
+    "@discordjs/voice": "^0.14.0",
+    "prism-media": "^1.3.2",
+    "dotenv": "^16.0.0"
+  }
+}
