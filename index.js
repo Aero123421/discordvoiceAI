@@ -3,6 +3,7 @@ const { joinVoiceChannel, EndBehaviorType } = require('@discordjs/voice');
 const prism = require('prism-media');
 const fs = require('fs');
 const { spawn } = require('child_process');
+const { OpenAI } = require('openai');
 const path = require('path');
 require('dotenv').config();
 
@@ -11,6 +12,7 @@ const client = new Client({
 });
 
 const sessions = new Map();
+const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 client.once('ready', () => {
   console.log(`${client.user.tag} としてログインしました。`);
@@ -55,19 +57,34 @@ client.on('voiceStateUpdate', async (oldState, newState) => {
 
 function transcribe(pcmPath, member) {
   const wavPath = pcmPath.replace(/\.pcm$/, '.wav');
-  const ff = spawn('ffmpeg', ['-y', '-f', 's16le', '-ar', '48k', '-ac', '2', '-i', pcmPath, wavPath]);
-  ff.on('exit', () => {
-    const py = spawn('python3', ['transcriber.py', wavPath]);
-    let text = '';
-    py.stdout.on('data', (d) => (text += d));
-    py.on('close', () => {
+  const ff = spawn('ffmpeg', [
+    '-y',
+    '-f',
+    's16le',
+    '-ar',
+    '48k',
+    '-ac',
+    '2',
+    '-i',
+    pcmPath,
+    wavPath,
+  ]);
+  ff.on('exit', async () => {
+    try {
+      const response = await openai.audio.transcriptions.create({
+        file: fs.createReadStream(wavPath),
+        model: 'whisper-1',
+      });
       const channel = member.guild.systemChannel;
       if (channel) {
-        channel.send(`${member} の文字起こし結果:\n${text || '取得できませんでした'}`);
+        channel.send(`${member} の文字起こし結果:\n${response.text || '取得できませんでした'}`);
       }
+    } catch (err) {
+      console.error('Transcription error:', err);
+    } finally {
       fs.unlink(pcmPath, () => {});
       fs.unlink(wavPath, () => {});
-    });
+    }
   });
 }
 
