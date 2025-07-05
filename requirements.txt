@@ -3,3 +3,4 @@ faster-whisper
 python-dotenv
 aiodiskqueue
 google-genai
+PyNaCl>=1.5
