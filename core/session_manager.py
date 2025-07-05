@@ -64,7 +64,7 @@ class RecordingSessionManager:
         session.start()
 
     async def stop_recording(self, member: discord.Member):
-        session = self.active_sessions.pop(member.id, None)
+        session = self.active_sessions.get(member.id)
         if session:
             session.stop()
             if session.vc.is_connected():
@@ -96,6 +96,9 @@ class RecordingSessionManager:
                     )
 
             os.remove(txt_path)
+
+            # transcription完了後にセッションを削除
+            self.active_sessions.pop(member.id, None)
 
     def get_session(self, user_id: int):
         return self.active_sessions.get(user_id)
