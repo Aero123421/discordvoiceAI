@@ -2,17 +2,29 @@ import os
 import json
 import google.generativeai as genai
 
+
 class GeminiProcessor:
     def __init__(self):
         genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
-        self.model = genai.GenerativeModel(os.getenv("GEMINI_MODEL", "gemini-2.5-flash"))
+        self.model = genai.GenerativeModel(
+            os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
+        )
 
     async def process_transcript(self, raw: str) -> dict | None:
         prompt = self._create_prompt(raw)
         try:
-            safety_settings = {k: "BLOCK_NONE" for k in ["HATE", "HARASSMENT", "SEXUAL", "DANGEROUS"]}
-            generation_config = genai.types.GenerationConfig(response_mime_type="application/json")
-            response = await self.model.generate_content_async(prompt, generation_config=generation_config, safety_settings=safety_settings)
+            safety_settings = {
+                k: "BLOCK_NONE"
+                for k in ["HATE", "HARASSMENT", "SEXUAL", "DANGEROUS"]
+            }
+            generation_config = genai.types.GenerationConfig(
+                response_mime_type="application/json"
+            )
+            response = await self.model.generate_content_async(
+                prompt,
+                generation_config=generation_config,
+                safety_settings=safety_settings,
+            )
             return json.loads(response.text)
         except Exception as e:
             print(f"Gemini APIエラー: {e}")

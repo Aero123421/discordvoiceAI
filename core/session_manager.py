@@ -6,8 +6,14 @@ from discord.ext import tasks
 
 from .gemini_processor import GeminiProcessor
 
+
 class RecordingSession:
-    def __init__(self, member: discord.Member, voice_client: discord.VoiceClient, manager):
+    def __init__(
+        self,
+        member: discord.Member,
+        voice_client: discord.VoiceClient,
+        manager,
+    ):
         self.member = member
         self.vc = voice_client
         self.manager = manager
@@ -37,6 +43,7 @@ class RecordingSession:
         if self.vc.is_recording():
             self.vc.stop_recording()
 
+
 class RecordingSessionManager:
     def __init__(self, bot: discord.Bot, queue):
         self.bot = bot
@@ -44,7 +51,11 @@ class RecordingSessionManager:
         self.active_sessions: dict[int, RecordingSession] = {}
         self.queue = queue
 
-    async def start_recording(self, member: discord.Member, channel: discord.VoiceChannel):
+    async def start_recording(
+        self,
+        member: discord.Member,
+        channel: discord.VoiceChannel,
+    ):
         if member.id in self.active_sessions:
             return
         vc = await channel.connect()
@@ -66,6 +77,7 @@ class RecordingSessionManager:
                 channel = member.guild.get_channel(channel_id)
                 if channel:
                     await channel.send(content)
+
     def get_session(self, user_id: int):
         return self.active_sessions.get(user_id)
 
@@ -77,7 +89,12 @@ class RecordingSessionManager:
         except Exception:
             return None
 
-    async def once_done_callback(self, sink: discord.sinks.WaveSink, member: discord.Member, *args):
+    async def once_done_callback(
+        self,
+        sink: discord.sinks.WaveSink,
+        member: discord.Member,
+        *args,
+    ):
         user_audio = sink.audio_data.get(member.id)
         if not user_audio:
             return
