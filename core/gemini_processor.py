@@ -1,29 +1,42 @@
 import os
 import json
-import google.generativeai as genai
+from google import genai
 
 
 class GeminiProcessor:
     def __init__(self):
-        genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
-        self.model = genai.GenerativeModel(
-            os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
-        )
+        self.client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
+        self.model = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
 
     async def process_transcript(self, raw: str) -> dict | None:
         prompt = self._create_prompt(raw)
         try:
-            safety_settings = {
-                k: "BLOCK_NONE"
-                for k in ["HATE", "HARASSMENT", "SEXUAL", "DANGEROUS"]
-            }
-            generation_config = genai.types.GenerationConfig(
-                response_mime_type="application/json"
-            )
-            response = await self.model.generate_content_async(
-                prompt,
-                generation_config=generation_config,
+            safety_settings = [
+                genai.types.SafetySetting(
+                    category=genai.types.HarmCategory.HARM_CATEGORY_HATE_SPEECH,
+                    threshold=genai.types.HarmBlockThreshold.BLOCK_NONE,
+                ),
+                genai.types.SafetySetting(
+                    category=genai.types.HarmCategory.HARM_CATEGORY_HARASSMENT,
+                    threshold=genai.types.HarmBlockThreshold.BLOCK_NONE,
+                ),
+                genai.types.SafetySetting(
+                    category=genai.types.HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT,
+                    threshold=genai.types.HarmBlockThreshold.BLOCK_NONE,
+                ),
+                genai.types.SafetySetting(
+                    category=genai.types.HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT,
+                    threshold=genai.types.HarmBlockThreshold.BLOCK_NONE,
+                ),
+            ]
+            config = genai.types.GenerateContentConfig(
+                response_mime_type="application/json",
                 safety_settings=safety_settings,
+            )
+            response = await self.client.aio.models.generate_content(
+                model=self.model,
+                contents=prompt,
+                config=config,
             )
             return json.loads(response.text)
         except Exception as e:

@@ -70,7 +70,7 @@
 # requirements.txt
 py-cord==2.5.0
 faster-whisper==1.0.3
-google-generativeai==0.7.2
+google-genai==1.24.0
 python-dotenv==1.0.1
 aiodiskqueue==0.3.1
 ```
@@ -666,33 +666,49 @@ Python
 
 ```
 # core/gemini_processor.py
-import google.generativeai as genai
+from google import genai
 import os
 import json
 
 class GeminiProcessor:
     def __init__(self):
-        genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
-        self.model = genai.GenerativeModel(os.getenv("GEMINI_MODEL", "gemini-2.5-flash"))
+        self.client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
+        self.model = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
 
     async def process_transcript(self, raw_transcript: str) -> dict | None:
         prompt = self.create_prompt(raw_transcript)
-        
+
         try:
-            # 安全性設定を調整（講義内容によっては必要）
-            safety_settings = {
-                'HATE': 'BLOCK_NONE',
-                'HARASSMENT': 'BLOCK_NONE',
-                'SEXUAL': 'BLOCK_NONE',
-                'DANGEROUS': 'BLOCK_NONE'
-            }
-            
-            response = await self.model.generate_content_async(
-                prompt,
-                safety_settings=safety_settings
+            safety_settings = [
+                genai.types.SafetySetting(
+                    category=genai.types.HarmCategory.HARM_CATEGORY_HATE_SPEECH,
+                    threshold=genai.types.HarmBlockThreshold.BLOCK_NONE,
+                ),
+                genai.types.SafetySetting(
+                    category=genai.types.HarmCategory.HARM_CATEGORY_HARASSMENT,
+                    threshold=genai.types.HarmBlockThreshold.BLOCK_NONE,
+                ),
+                genai.types.SafetySetting(
+                    category=genai.types.HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT,
+                    threshold=genai.types.HarmBlockThreshold.BLOCK_NONE,
+                ),
+                genai.types.SafetySetting(
+                    category=genai.types.HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT,
+                    threshold=genai.types.HarmBlockThreshold.BLOCK_NONE,
+                ),
+            ]
+
+            config = genai.types.GenerateContentConfig(
+                response_mime_type="application/json",
+                safety_settings=safety_settings,
             )
-            
-            # JSONをパースして返す
+
+            response = await self.client.aio.models.generate_content(
+                model=self.model,
+                contents=prompt,
+                config=config,
+            )
+
             json_response = json.loads(response.text)
             return json_response
 
@@ -1315,7 +1331,7 @@ async def transcription_worker(bot):
 Python
 
 ```python
-import google.generativeai as genai
+from google import genai
 import os
 import json
 
@@ -1324,25 +1340,40 @@ class GeminiProcessor:
         api_key = os.getenv("GEMINI_API_KEY")
         if not api_key:
             raise ValueError("GEMINI_API_KEYが設定されていません。")
-        genai.configure(api_key=api_key)
-        self.model = genai.GenerativeModel(os.getenv("GEMINI_MODEL", "gemini-2.5-flash"))
+        self.client = genai.Client(api_key=api_key)
+        self.model = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
 
     async def process_transcript(self, raw_transcript: str) -> dict | None:
         prompt = self._create_prompt(raw_transcript)
         
         try:
-            safety_settings = {
-                'HATE': 'BLOCK_NONE', 'HARASSMENT': 'BLOCK_NONE',
-                'SEXUAL': 'BLOCK_NONE', 'DANGEROUS': 'BLOCK_NONE'
-            }
-            generation_config = genai.types.GenerationConfig(
-                response_mime_type="application/json"
+            safety_settings = [
+                genai.types.SafetySetting(
+                    category=genai.types.HarmCategory.HARM_CATEGORY_HATE_SPEECH,
+                    threshold=genai.types.HarmBlockThreshold.BLOCK_NONE,
+                ),
+                genai.types.SafetySetting(
+                    category=genai.types.HarmCategory.HARM_CATEGORY_HARASSMENT,
+                    threshold=genai.types.HarmBlockThreshold.BLOCK_NONE,
+                ),
+                genai.types.SafetySetting(
+                    category=genai.types.HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT,
+                    threshold=genai.types.HarmBlockThreshold.BLOCK_NONE,
+                ),
+                genai.types.SafetySetting(
+                    category=genai.types.HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT,
+                    threshold=genai.types.HarmBlockThreshold.BLOCK_NONE,
+                ),
+            ]
+            config = genai.types.GenerateContentConfig(
+                response_mime_type="application/json",
+                safety_settings=safety_settings,
             )
-            
-            response = await self.model.generate_content_async(
-                prompt,
-                generation_config=generation_config,
-                safety_settings=safety_settings
+
+            response = await self.client.aio.models.generate_content(
+                model=self.model,
+                contents=prompt,
+                config=config,
             )
             
             return json.loads(response.text)
