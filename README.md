@@ -21,6 +21,9 @@
    ```bash
    pip install -r requirements.txt
    ```
+   **注意**: `discord` パッケージではなく、Pycord (`py-cord`) を使用します。誤って
+   `discord.py` や `discord` をインストールしていると、`discord.Bot` が
+   見つからないエラーが発生します。
 4. プロジェクトルートに `.env` ファイルを作成し、次の内容を設定します。
    ```
    DISCORD_TOKEN="YOUR_DISCORD_BOT_TOKEN"
