@@ -26,6 +26,7 @@ def ensure_env() -> None:
                 "GEMINI_API_KEY=\"YOUR_GEMINI_API_KEY\"\n"
                 "TRANSCRIPTION_MODEL=\"small\"\n"
                 "GEMINI_MODEL=\"gemini-2.5-flash\"\n"
+                "TEST_GUILD_ID=\"YOUR_TEST_GUILD_ID\"\n"
             )
     print(".env が見つかりませんでした。 .env.example を生成しました。必要事項を記入し .env を作成してください。")
 
@@ -61,7 +62,9 @@ class MyBot(discord.Bot):
         print("セットアップが完了し、文字起こしワーカーが起動しました。")
 
 
-bot = MyBot(intents=intents)
+test_guild = os.getenv("TEST_GUILD_ID")
+test_guilds = [int(test_guild)] if test_guild else None
+bot = MyBot(intents=intents, test_guilds=test_guilds)
 
 
 @bot.event

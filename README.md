@@ -34,6 +34,7 @@
    GEMINI_API_KEY="YOUR_GEMINI_API_KEY"
    TRANSCRIPTION_MODEL="small"     # 任意
    GEMINI_MODEL="gemini-2.5-flash" # 任意
+   TEST_GUILD_ID="YOUR_TEST_GUILD_ID" # 任意: スラッシュコマンドを即時反映させたいテストサーバーID
    ```
 5. Bot を起動します。データディレクトリ(`data/queue`, `data/recordings`) は起動時に自動で作成されます。
    ```bash
