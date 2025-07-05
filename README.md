@@ -26,9 +26,42 @@
    ```bash
    node index.js
    ```
+## スラッシュコマンド
+
+現在、以下の基本的なスラッシュコマンドが実装されています。
+
+-   `/ping`: ボットがオンラインであるかを確認します。"Pong!" と応答します。
+
+### 新しいスラッシュコマンドの追加方法 (開発者向け)
+
+1.  **コマンド定義**: `index.js` ファイル内の `commands` 配列に新しいコマンド定義を追加します。`SlashCommandBuilder` を使用してコマンド名、説明、オプションなどを設定します。
+    ```javascript
+    // 例:
+    // const commands = [
+    //   new SlashCommandBuilder().setName('ping').setDescription('Replies with Pong!'),
+    //   new SlashCommandBuilder().setName('hello').setDescription('Greets the user.').addUserOption(option => option.setName('user').setDescription('The user to greet')),
+    // ].map(command => command.toJSON());
+    ```
+2.  **コマンド登録**: コマンド定義はボット起動時に `client.once('ready', ...)` 内の処理で自動的に Discord に登録されます。
+    *   開発中は、`.env` ファイルに `GUILD_ID` (READMEでは `TEST_GUILD_ID` と記載されているものと同じ) を設定し、`index.js` 内のギルドコマンド登録部分 (`Routes.applicationGuildCommands(...)`) のコメントを解除すると、特定のサーバーでコマンドが即座に反映されるため便利です。グローバルコマンド (`Routes.applicationCommands(...)`) は反映に最大1時間かかることがあります。
+3.  **インタラクション処理**: `index.js` ファイル内の `client.on('interactionCreate', ...)` イベントリスナーに、新しいコマンドの処理ロジックを追加します。
+    ```javascript
+    // client.on('interactionCreate', async interaction => {
+    //   if (!interaction.isChatInputCommand()) return;
+    //   const { commandName, options } = interaction;
+
+    //   if (commandName === 'ping') {
+    //     await interaction.reply('Pong!');
+    //   } else if (commandName === 'hello') {
+    //     const user = options.getUser('user');
+    //     await interaction.reply(user ? `Hello, ${user.username}!` : 'Hello there!');
+    //   }
+    // });
+    ```
+
 ## 仕組みの概要
 
-- 音声データは `data/recordings` ディレクトリに一時保存されます。
+- 音声データは `data/recordings` ディレクトリに一時保存されます。このディレクトリはボット起動時に自動的に作成されます。
 - チャンクごとに生成された WAV ファイルは `faster-whisper` で文字起こしを行います。
 - 文字起こし結果は Gemini API で整形され、指定したチャンネルへ送信されます。
 
