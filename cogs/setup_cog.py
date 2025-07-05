@@ -32,30 +32,54 @@ class SetupCog(commands.Cog):
             discord.SelectOption(label=c.name, value=str(c.id))
             for c in text_channels
         ]
-        category_select = discord.ui.Select(
-            placeholder="録音カテゴリ",
-            options=options_cat,
-        )
-        text_select = discord.ui.Select(
-            placeholder="送信先チャンネル",
-            options=options_text,
-        )
+        class SetupView(discord.ui.View):
+            def __init__(self, ctx):
+                super().__init__(timeout=180)
+                self.ctx = ctx
+                self.category_id: int | None = None
+                self.output_channel_id: int | None = None
 
-        async def callback(interaction: discord.Interaction):
-            config = {
-                "target_category_id": int(category_select.values[0]),
-                "output_channel_id": int(text_select.values[0])
-            }
-            with open(f"config_{ctx.guild.id}.json", "w") as f:
-                json.dump(config, f)
-            await interaction.response.send_message("設定完了", ephemeral=True)
+                self.category_select = discord.ui.Select(
+                    placeholder="録音カテゴリ",
+                    options=options_cat,
+                )
+                self.text_select = discord.ui.Select(
+                    placeholder="送信先チャンネル",
+                    options=options_text,
+                )
 
-        category_select.callback = callback
-        text_select.callback = callback
+                self.category_select.callback = self.category_callback
+                self.text_select.callback = self.text_callback
 
-        view = discord.ui.View()
-        view.add_item(category_select)
-        view.add_item(text_select)
+                self.add_item(self.category_select)
+                self.add_item(self.text_select)
+
+            async def category_callback(self, interaction: discord.Interaction):
+                self.category_id = int(self.category_select.values[0])
+                await interaction.response.defer()
+
+            async def text_callback(self, interaction: discord.Interaction):
+                self.output_channel_id = int(self.text_select.values[0])
+                await interaction.response.defer()
+
+            @discord.ui.button(label="保存", style=discord.ButtonStyle.green)
+            async def save(self, button: discord.ui.Button, interaction: discord.Interaction):
+                if self.category_id is None or self.output_channel_id is None:
+                    await interaction.response.send_message(
+                        "カテゴリと送信先を選択してください。",
+                        ephemeral=True,
+                    )
+                    return
+                config = {
+                    "target_category_id": self.category_id,
+                    "output_channel_id": self.output_channel_id,
+                }
+                with open(f"config_{self.ctx.guild.id}.json", "w") as f:
+                    json.dump(config, f)
+                await interaction.response.send_message("設定完了", ephemeral=True)
+                self.stop()
+
+        view = SetupView(ctx)
         await ctx.respond("設定を選択してください", view=view, ephemeral=True)
 
 
