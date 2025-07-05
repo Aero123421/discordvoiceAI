@@ -69,14 +69,33 @@ class RecordingSessionManager:
             session.stop()
             if session.vc.is_connected():
                 await session.vc.disconnect()
+
+            # 最後の音声チャンクの文字起こしが完了するまで待機
+            await self.queue.join()
+
             final_text = "".join(session.transcript_segments)
+            if not final_text:
+                print("文字起こしテキストが取得できませんでした。")
+                return
+
             result = await self.gemini.process_transcript(final_text)
             content = result.get("full_transcript", final_text)
+
+            os.makedirs("data/transcripts", exist_ok=True)
+            txt_path = f"data/transcripts/{member.name}_transcript_{int(time.time())}.txt"
+            with open(txt_path, "w", encoding="utf-8") as f:
+                f.write(content)
+
             channel_id = self.get_output_channel(member.guild)
             if channel_id:
                 channel = member.guild.get_channel(channel_id)
                 if channel:
-                    await channel.send(content)
+                    await channel.send(
+                        f"{member.mention} さんの文字起こし結果です。",
+                        file=discord.File(txt_path),
+                    )
+
+            os.remove(txt_path)
 
     def get_session(self, user_id: int):
         return self.active_sessions.get(user_id)
