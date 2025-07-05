@@ -1,0 +1,5 @@
+py-cord
+faster-whisper
+python-dotenv
+aiodiskqueue
+google-generativeai
