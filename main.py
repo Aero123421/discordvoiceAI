@@ -4,7 +4,9 @@ import discord
 from dotenv import load_dotenv
 import aiodiskqueue
 
+from core.session_manager import RecordingSessionManager
 from core.transcription_worker import transcription_worker
+from cogs import setup_cog, recording_cog
 
 
 def ensure_directories() -> None:
@@ -35,7 +37,31 @@ intents = discord.Intents.default()
 intents.guilds = True
 intents.voice_states = True
 
-bot = discord.Bot(intents=intents)
+
+class MyBot(discord.Bot):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.transcription_queue = None
+        self.session_manager = None
+
+    async def setup_hook(self):
+        os.makedirs(os.path.join("data", "queue"), exist_ok=True)
+        os.makedirs(os.path.join("data", "recordings"), exist_ok=True)
+
+        queue_path = os.path.join(".", "data", "queue")
+        self.transcription_queue = await aiodiskqueue.Queue.create(queue_path)
+        self.session_manager = RecordingSessionManager(
+            self, self.transcription_queue
+        )
+
+        self.add_cog(setup_cog.SetupCog(self))
+        self.add_cog(recording_cog.RecordingCog(self))
+
+        self.loop.create_task(transcription_worker(self))
+        print("セットアップが完了し、文字起こしワーカーが起動しました。")
+
+
+bot = MyBot(intents=intents)
 
 
 @bot.event
@@ -43,18 +69,12 @@ async def on_ready():
     print(f"{bot.user}としてログインしました。")
 
 
-async def setup_bot():
-    queue_path = os.path.join(".", "data", "queue")
-    os.makedirs(queue_path, exist_ok=True)
-    queue = await aiodiskqueue.Queue.create(queue_path)
-    bot.transcription_queue = queue
-
-    from cogs import setup_cog, recording_cog
-    bot.add_cog(setup_cog.SetupCog(bot))
-    bot.add_cog(recording_cog.RecordingCog(bot))
-
-    bot.loop.create_task(transcription_worker(bot))
-
 if __name__ == "__main__":
-    asyncio.run(setup_bot())
-    bot.run(os.getenv("DISCORD_TOKEN"))
+    load_dotenv()
+    token = os.getenv("DISCORD_TOKEN")
+    gemini_key = os.getenv("GEMINI_API_KEY")
+
+    if not token or not gemini_key:
+        print("エラー: .envファイルにDISCORD_TOKENとGEMINI_API_KEYを設定してください。")
+    else:
+        bot.run(token)
