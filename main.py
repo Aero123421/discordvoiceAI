@@ -18,7 +18,9 @@ async def on_ready():
     print(f"{bot.user}としてログインしました。")
 
 async def setup_bot():
-    queue = await aiodiskqueue.Queue.create("./data/queue")
+    queue_path = os.path.join(".", "data", "queue")
+    os.makedirs(queue_path, exist_ok=True)
+    queue = await aiodiskqueue.Queue.create(queue_path)
     bot.transcription_queue = queue
 
     from cogs import setup_cog, recording_cog
