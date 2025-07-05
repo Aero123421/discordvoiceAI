@@ -31,11 +31,20 @@
    TRANSCRIPTION_MODEL="small"     # 任意
    GEMINI_MODEL="gemini-2.5-flash" # 任意
    ```
-5. Bot を起動します。
+5. 録音データ用ディレクトリを作成します。
+   ```bash
+   mkdir -p data/queue data/recordings
+   ```
+   Windows の場合は次のコマンドを実行します。
+   ```powershell
+   mkdir data\queue
+   mkdir data\recordings
+   ```
+6. Bot を起動します。
    ```bash
    python main.py
    ```
-6. Discord 上で `/setup channels` コマンドを実行し、録音対象のカテゴリと結果送信先のテキストチャンネルを選択します。
+7. Discord 上で `/setup channels` コマンドを実行し、録音対象のカテゴリと結果送信先のテキストチャンネルを選択します。
 
 ## 仕組みの概要
 
