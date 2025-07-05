@@ -8,3 +8,4 @@ venv/
 
 # Data
 /data/
+node_modules/
